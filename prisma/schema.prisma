@@ -1,0 +1,66 @@
+// Employee Attendance Management System — database schema
+// SQLite for easy local setup. Each model maps to an entity in the ERD.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String
+  employees Employee[]
+}
+
+model Shift {
+  id        Int        @id @default(autoincrement())
+  name      String
+  startTime String // "HH:MM"
+  endTime   String // "HH:MM"
+  employees Employee[]
+}
+
+model Employee {
+  id           Int             @id @default(autoincrement())
+  name         String
+  email        String          @unique
+  passwordHash String
+  role         String          @default("EMPLOYEE") // EMPLOYEE | MANAGER | ADMIN
+  leaveBalance Int             @default(12)
+  departmentId Int?
+  department   Department?     @relation(fields: [departmentId], references: [id])
+  shiftId      Int?
+  shift        Shift?          @relation(fields: [shiftId], references: [id])
+  attendance   Attendance[]
+  leaves       LeaveRequest[]
+  createdAt    DateTime        @default(now())
+}
+
+model Attendance {
+  id         Int       @id @default(autoincrement())
+  employeeId Int
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  workDate   String // "YYYY-MM-DD"
+  clockIn    DateTime?
+  clockOut   DateTime?
+  status     String    @default("PRESENT") // PRESENT | LATE | ABSENT | LEAVE
+  createdAt  DateTime  @default(now())
+
+  @@unique([employeeId, workDate])
+}
+
+model LeaveRequest {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  fromDate   String // "YYYY-MM-DD"
+  toDate     String // "YYYY-MM-DD"
+  type       String   @default("CASUAL") // CASUAL | SICK | EARNED
+  reason     String   @default("")
+  status     String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt  DateTime @default(now())
+}
